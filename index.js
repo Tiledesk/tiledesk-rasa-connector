@@ -10,7 +10,10 @@ const fs = require('fs');
 const request = require('request');
 const { TiledeskChatbotClient } = require('@tiledesk/tiledesk-chatbot-client');
 const jwt = require('jsonwebtoken');
+let { KVBaseMongo } = require('./KVBaseMongo');
+console.log("KVBaseMongo", KVBaseMongo)
 var mongodb = require("mongodb");
+let db = new KVBaseMongo();
 
 var app = express();
 app.use(cors());
@@ -541,10 +544,13 @@ function remove(key, callback) {
 //   db.collection("bots").createIndex(
 //     { "key": 1 }, { unique: true }
 //   );
+db.connect(process.env.MONGODB_URI, () => {
   var port = process.env.PORT || 3000;
   app.listen(port, function () {
-      console.log('Example app listening on port ', port);
+    console.log('Example app listening on port ', port);
   });
+});
+  
 // });
 
 app.get('/', (req, res) => {

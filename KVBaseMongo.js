@@ -1,21 +1,14 @@
 const mongodb = require("mongodb");
 
-class KVBase {
-
-  /**
-   * Constructor for Key Value Database adapter object
-   *
-   * @example
-   * const { KVBase } = require('./KVBase');
-   * 
-   */
+class KVBaseMongo {
 
   constructor() {
+    console.log("asdasda")
   }
 
-  connect(MONGODB_URI) {
-    console.log("connecting to mongodb...")
-    mongodb.MongoClient.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true }, function (err, client) {
+  connect(MONGODB_URI, callback) {
+    console.log("Connecting to mongodb...")
+    mongodb.MongoClient.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true }, (err, client) => {
       if (err) {
         console.log(err);
         process.exit(1);
@@ -23,9 +16,10 @@ class KVBase {
         console.log("MongoDB successfully connected.")
         this.db = client.db();
         console.log("Database connection ready");
-        db.collection("bots").createIndex(
+        this.db.collection("bots").createIndex(
           { "key": 1 }, { unique: true }
         );
+        callback();
       }
     });
   }
@@ -33,7 +27,7 @@ class KVBase {
   set(k, v) {
     return new Promise(resolve => {
       //this.db.set(k, v).then(() => {resolve();});
-      db.collection(BOTS_COLLECTION).updateOne({key: key}, { $set: { value: content, key: key } }, { upsert: true }, function(err, doc) {
+      this.db.collection(BOTS_COLLECTION).updateOne({key: key}, { $set: { value: content, key: key } }, { upsert: true }, function(err, doc) {
         if (err) {
           reject(err);
         }
@@ -47,7 +41,7 @@ class KVBase {
   get(k) {
     return new Promise(resolve => {
       //this.db.get(k).then(value => {resolve(value)});
-      db.collection(BOTS_COLLECTION).findOne({ key: key }, function(err, doc) {
+      this.db.collection(BOTS_COLLECTION).findOne({ key: key }, function(err, doc) {
         if (err) {
           reject(err);
         }
@@ -60,7 +54,7 @@ class KVBase {
 
   remove(key) {
     return new Promise(resolve => {
-      db.collection(BOTS_COLLECTION).deleteOne({key: key}, function(err) {
+      this.db.collection(BOTS_COLLECTION).deleteOne({key: key}, function(err) {
         if (err) {
           reject(err);
         }
@@ -72,4 +66,4 @@ class KVBase {
   }
 }
 
-module.exports = { KVBase };
+module.exports = { KVBaseMongo };
