@@ -171,7 +171,7 @@ function sendMessage(msg_json, project_id, recipient, token, callback) {
 
 const CLIENT_TIMESTAMP = "clienttimestamp"
 
-app.post("/tdbot/:chatbot?", (req, res) => {
+app.post("/tdbot/:chatbot?", async (req, res) => {
   // delete req.body.payload.request.messages;
   console.log(" ******* NEW REQUEST *******\n\n\n")
   console.log('req.body:', JSON.stringify(req.body));
@@ -226,6 +226,36 @@ app.post("/tdbot/:chatbot?", (req, res) => {
   // runDFQueryOnTiledeskChatbotId(cbclient.text, chatbot_id, dialogflow_session_id, payload, function(result) {
   //   sendBackToTiledesk(cbclient, req.body.payload, result);
   // });
+
+  const RASAserver = await get(chatbot_id);
+  runRASAQuery(RASAserver, text, function(result) {
+    console.log("BOT: RASA REPLY: " + JSON.stringify(result));
+    if(res.statusCode === 200) {
+
+      /* you can optionally check the intent confidence
+      var reply = "Intent under confidence threshold, can you rephrase?"
+      if (result.intent.confidence > 0.8) {
+        reply = result.reply
+      }
+      */
+      
+      sendMessage(
+        {
+          "text": result.reply + "\n* Ok\n* Unhappy",
+          attributes: {
+            microlanguage: true
+          }
+        },
+        project_id,
+        recipient_id,
+        token,
+        (err) => {
+          console.log("Message sent. Error? ", err);
+        }
+      );
+      
+    }
+  });
 })
 
 function sendBackToTiledesk(cbclient, payload, result) {
