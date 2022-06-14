@@ -3,7 +3,7 @@ const mongodb = require("mongodb");
 class KVBaseMongo {
 
   constructor() {
-    console.log("asdasda")
+    this.KV_COLLECTION = 'kvstore'
   }
 
   connect(MONGODB_URI, callback) {
@@ -27,7 +27,7 @@ class KVBaseMongo {
   set(k, v) {
     return new Promise(resolve => {
       //this.db.set(k, v).then(() => {resolve();});
-      this.db.collection(BOTS_COLLECTION).updateOne({key: key}, { $set: { value: content, key: key } }, { upsert: true }, function(err, doc) {
+      this.db.collection(this.KV_COLLECTION).updateOne({key: k}, { $set: { value: v, key: k } }, { upsert: true }, function(err, doc) {
         if (err) {
           reject(err);
         }
@@ -41,20 +41,25 @@ class KVBaseMongo {
   get(k) {
     return new Promise(resolve => {
       //this.db.get(k).then(value => {resolve(value)});
-      this.db.collection(BOTS_COLLECTION).findOne({ key: key }, function(err, doc) {
+      this.db.collection(this.KV_COLLECTION).findOne({ key: k }, function(err, doc) {
         if (err) {
           reject(err);
         }
         else {
-          resolve();
+          if (doc) {
+            resolve(doc.value);
+          }
+          else {
+            resolve(null);
+          }
         }
       });
     });
   }
 
-  remove(key) {
+  remove(k) {
     return new Promise(resolve => {
-      this.db.collection(BOTS_COLLECTION).deleteOne({key: key}, function(err) {
+      this.db.collection(this.KV_COLLECTION).deleteOne({key: k}, function(err) {
         if (err) {
           reject(err);
         }

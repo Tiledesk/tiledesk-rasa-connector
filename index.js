@@ -174,7 +174,7 @@ function sendMessage(msg_json, project_id, recipient, token, callback) {
 
 const CLIENT_TIMESTAMP = "clienttimestamp"
 
-app.post("/tdbot/:chatbot?", async (req, res) => {
+app.post("/rasabot", async (req, res) => {
   // delete req.body.payload.request.messages;
   console.log(" ******* NEW REQUEST *******\n\n\n")
   console.log('req.body:', JSON.stringify(req.body));
@@ -193,7 +193,7 @@ app.post("/tdbot/:chatbot?", async (req, res) => {
   const cbclient = new TiledeskChatbotClient({request: req, response: res, APIURL: _API_URL, APIKEY: '____APIKEY____', log: API_LOG});
 
   console.log("cbclient.APIURL", cbclient.APIURL)
-  console.log("cbclient.tiledeskClient.APIURL", cbclient.tiledeskClient.APIURL)
+  console.log("cbclient.tiledeskClient.APIURL",   cbclient.tiledeskClient.APIURL)
   
   var chatbot_id;
   var chatbot_name;
@@ -317,11 +317,13 @@ function fireNotFoundEvent(cbclient, is_fallback, confidence) {
 app.post('/botcredendials/:project/bots/:chatbot', (req, res) => {
   const chatbot_id = req.params.chatbot;
   console.log("post bot credentials for", chatbot_id)
-  var form = new formidable.IncomingForm();
+  console.log('req.body:', JSON.stringify(req.body));
+  const data = req.body;
+  //var form = new formidable.IncomingForm();
   // FORM.PARSE in advance: to avoid H18 error
   // Our 503s (H18 errors) were caused by us not consuming POST data from the socket for some requests.
   // src: https://github.com/copleykj/socialize-cloudinary/issues/1
-  form.parse(req, function (err, fields, files) {
+  /*form.parse(req, function (err, fields, files) {
     console.log("Form parsed.")
     verifyAuthorization(req, function(verified) {
       if (!verified) {
@@ -334,67 +336,33 @@ app.post('/botcredendials/:project/bots/:chatbot', (req, res) => {
         updateCredentials(chatbot_id, fields, files, res)
       }
     })
+  */
+  updateCredentials(chatbot_id, data, res, () => {
+    res.writeHead(200, {'content-type': 'application/json'});
+    res.write('{\"success\": true}');
+    res.end();
   })
 });
 
-function updateCredentials(chatbot_id, fields, files, res) {
+async function updateCredentials(chatbot_id, data, res, callback) {
   console.log("updating chatbot: ", chatbot_id)
-  console.log("fields = ", fields)
-  console.log("files-STRINGFY = ", JSON.stringify(files))
-  get(chatbot_id, function(err, reply) {
-    console.log("chatbot found: ", reply)
-    let content = {}
-    if (reply && reply.value) {
-      content = reply.value
-      console.log("chatbot found: ", JSON.stringify(content))
-    }
-    if (fields && fields.kbs && fields.kbs.trim() != '') {
-      content.kbs = fields.kbs
-      console.log("kbs found: ", content.kbs)
-    }
-    else {
-      content.kbs = null
-    }
-    content.language = (fields && fields.language)? fields.language : 'en'
-    if (files['file']) {
-      var path = files["file"].path;
-      if (path) {
-        fs.readFile(path, 'utf8', function(err, data) {
-          if (err) throw err;
-          const filename = files["file"].name
-          console.log('saving file: ' , filename);
-          // console.log(data)
-          let credentials;
-          try {
-            credentials = JSON.parse(data)
-          } catch(e) {
-              console.log('Invalid JSON credentials file.', data);
-              res.status(500).send({success: false, msg: 'Not a valid JSON file.', msgkey: "invalid-JSON-file"});
-              return
-          }
-          content.credentials = credentials
-          content.credentials_filename = filename
-          console.log("got credentials of: ", credentials.project_id)
-          set(chatbot_id, content, function(err) {
-            console.log("data saved with credentials. err?", err)
-          })
-          res.writeHead(200, {'content-type': 'application/json'});
-          res.write('{\"success\": true}');
-          res.end();
-        });
-      }
-    }
-    else {
-      console.log("saving content (no credentials): ", JSON.stringify(content))
-      set(chatbot_id, content, function(err) {
-        console.log("data saved (no credentials). err?", err)
-        res.writeHead(200, {'content-type': 'application/json'});
-        res.write('{\"success\": true}');
-        res.end();
-      })
-    }
-  });
-  // })
+  const value = await db.get(chatbot_id);
+  console.log("chatbot found: ", value);
+  let content = {}
+  if (value) {
+    content = value;
+  }
+  if (data && data.serverUrl && data.serverUrl.trim() != '') {
+    content.serverUrl = data.serverUrl
+    console.log("value.serverUrl updated.");
+  }
+  else {
+    content.serverUrl = null;
+  }
+  console.log("saving content: ", JSON.stringify(content));
+  await db.set(chatbot_id, content);
+  console.log("data saved.");
+  callback();
 }
 
 app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
