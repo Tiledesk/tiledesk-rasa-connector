@@ -521,6 +521,6 @@ db.connect(process.env.MONGODB_URI, () => {
 // });
 
 app.get('/', (req, res) => {
-  res.write("Hello from Dialogflow connector 1.0.1");
+  res.write("Hello from RASA connector 0.1.0");
   res.end();
 });
