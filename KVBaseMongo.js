@@ -7,15 +7,12 @@ class KVBaseMongo {
   }
 
   connect(MONGODB_URI, callback) {
-    console.log("Connecting to mongodb...")
     mongodb.MongoClient.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true }, (err, client) => {
       if (err) {
         console.log(err);
         process.exit(1);
       } else {
-        console.log("MongoDB successfully connected.")
         this.db = client.db();
-        console.log("Database connection ready");
         this.db.collection("bots").createIndex(
           { "key": 1 }, { unique: true }
         );

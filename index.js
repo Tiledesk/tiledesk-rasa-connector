@@ -11,7 +11,6 @@ const request = require('request');
 const { TiledeskChatbotClient } = require('@tiledesk/tiledesk-chatbot-client');
 const jwt = require('jsonwebtoken');
 let { KVBaseMongo } = require('./KVBaseMongo');
-console.log("KVBaseMongo", KVBaseMongo)
 var mongodb = require("mongodb");
 let db = new KVBaseMongo();
 
@@ -29,7 +28,7 @@ app.use(bodyParser.urlencoded({ extended: true , limit: '50mb'}));
 //   })
 // }
 
-function runRASAQuery(RASAurl, text, callback) {
+function runRASAQuery(RASAurl, rasa_sender_id, text, callback) {
 
   request(
     {
@@ -39,7 +38,8 @@ function runRASAQuery(RASAurl, text, callback) {
         "Content-Type": "application/json"
       },
       json: {
-        "message": text
+        "message": text,
+        "sender": rasa_sender_id
       }
     },
     function(err, res, resbody) {
@@ -52,9 +52,6 @@ function runRASAQuery(RASAurl, text, callback) {
       }
       else {
         console.log("RASA REPLY:", resbody);
-        if (resbody && resbody.length > 0 && resbody[0].text) {
-          resbody.reply = resbody[0].text;  
-        }
         callback(resbody);
       }
     }
@@ -209,9 +206,9 @@ app.post("/rasabot", async (req, res) => {
   console.log("CHATBOT-ID: ", chatbot_id)
 
   console.log(" ******* TEXT *******" + cbclient.text)
-  let payload = {}
-  let conversation = cbclient.supportRequest
-  payload.tiledesk = req.body;
+  /*let payload = {}*/
+  let conversation = cbclient.supportRequest;
+  /*payload.tiledesk = req.body;*/
   // immediately reply back
   res.status(200).send({"success":true});
   // updates request's first text, so agents can see
@@ -220,21 +217,35 @@ app.post("/rasabot", async (req, res) => {
     var properties = {
       "first_text": cbclient.text
     }
-    cbclient.updateRequest(properties, null, function(err) {
+    cbclient.tiledeskClient.updateRequestProperties(conversation.request_id, properties, function(err) {
       console.log("request updated with text: ", cbclient.text)
     })
   }
 
-  const dialogflow_session_id = conversation.request_id
+  const rasa_user_id = conversation.request_id;
   // runDFQueryOnTiledeskChatbotId(cbclient.text, chatbot_id, dialogflow_session_id, payload, function(result) {
   //   sendBackToTiledesk(cbclient, req.body.payload, result);
   // });
 
-  const RASAserver = await get(chatbot_id);
-  runRASAQuery(RASAserver, text, function(result) {
+  const chatbotInfo = await db.get(chatbot_id);
+  console.log("Chatbot found!", chatbotInfo);
+  const RASAurl = chatbotInfo.serverUrl;
+  runRASAQuery(RASAurl, rasa_user_id, cbclient.text, function(result) {
     console.log("BOT: RASA REPLY: " + JSON.stringify(result));
     if(res.statusCode === 200) {
 
+      if (result && result.length > 0 && result[0].text) {
+        cbclient.tiledeskClient.sendSupportMessage(
+          conversation.request_id,
+          {
+            text: result[0].text
+          },
+          () => {
+            console.log("Message sent.");
+          }
+        );
+      }
+      
       /* you can optionally check the intent confidence
       var reply = "Intent under confidence threshold, can you rephrase?"
       if (result.intent.confidence > 0.8) {
@@ -242,7 +253,7 @@ app.post("/rasabot", async (req, res) => {
       }
       */
       
-      sendMessage(
+      /*sendMessage(
         {
           "text": result.reply + "\n* Ok\n* Unhappy",
           attributes: {
@@ -255,7 +266,7 @@ app.post("/rasabot", async (req, res) => {
         (err) => {
           console.log("Message sent. Error? ", err);
         }
-      );
+      );*/
       
     }
   });
@@ -512,10 +523,13 @@ function remove(key, callback) {
 //   db.collection("bots").createIndex(
 //     { "key": 1 }, { unique: true }
 //   );
+console.log("Starting RASA connector...");
+console.log("Connecting to mongodb...");
 db.connect(process.env.MONGODB_URI, () => {
+  console.log("MongoDB successfully connected.");
   var port = process.env.PORT || 3000;
   app.listen(port, function () {
-    console.log('Example app listening on port ', port);
+    console.log('RASA connector listening on port ', port);
   });
 });
   
