@@ -253,21 +253,6 @@ app.post("/rasabot", async (req, res) => {
       }
       */
       
-      /*sendMessage(
-        {
-          "text": result.reply + "\n* Ok\n* Unhappy",
-          attributes: {
-            microlanguage: true
-          }
-        },
-        project_id,
-        recipient_id,
-        token,
-        (err) => {
-          console.log("Message sent. Error? ", err);
-        }
-      );*/
-      
     }
   });
 })
