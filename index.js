@@ -227,6 +227,7 @@ app.post("/rasabot", async (req, res) => {
   //   sendBackToTiledesk(cbclient, req.body.payload, result);
   // });
 
+  console.log("looking for chatbot", chatbot_id)
   const chatbotInfo = await db.get(chatbot_id);
   console.log("Chatbot found!", chatbotInfo);
   const RASAurl = chatbotInfo.serverUrl;
