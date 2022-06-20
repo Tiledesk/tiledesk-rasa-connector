@@ -13,7 +13,7 @@ class KVBaseMongo {
         process.exit(1);
       } else {
         this.db = client.db();
-        this.db.collection("bots").createIndex(
+        this.db.collection(this.KV_COLLECTION).createIndex(
           { "key": 1 }, { unique: true }
         );
         callback();
@@ -40,13 +40,16 @@ class KVBaseMongo {
       //this.db.get(k).then(value => {resolve(value)});
       this.db.collection(this.KV_COLLECTION).findOne({ key: k }, function(err, doc) {
         if (err) {
+          console.error("Error reading mongodb value", err);
           reject(err);
         }
         else {
           if (doc) {
+            console.log("Doc found", doc);
             resolve(doc.value);
           }
           else {
+            console.log("No Doc found!");
             resolve(null);
           }
         }
