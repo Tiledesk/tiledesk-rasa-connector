@@ -38,6 +38,9 @@ class KVBaseMongo {
   get(k) {
     return new Promise(resolve => {
       //this.db.get(k).then(value => {resolve(value)});
+      console.log("Searching on ", this.db)
+      console.log("Searching on Collection", this.KV_COLLECTION)
+      
       this.db.collection(this.KV_COLLECTION).findOne({ key: k }, function(err, doc) {
         if (err) {
           console.error("Error reading mongodb value", err);
