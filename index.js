@@ -377,7 +377,7 @@ app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
         console.log("reply:", reply)
         if (!reply) {
           response.success = false
-          response.errMessage = err
+          response.errMessage = "No bot found"
           res.writeHead(200, {'content-type': 'application/json'});
           res.write(JSON.stringify(response));
           res.end();
