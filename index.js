@@ -316,29 +316,28 @@ app.post('/botcredendials/:project/bots/:chatbot', (req, res) => {
   console.log("post bot credentials for", chatbot_id)
   console.log('req.body:', JSON.stringify(req.body));
   const data = req.body;
+  console.log("DARA::", data)
   //var form = new formidable.IncomingForm();
   // FORM.PARSE in advance: to avoid H18 error
   // Our 503s (H18 errors) were caused by us not consuming POST data from the socket for some requests.
   // src: https://github.com/copleykj/socialize-cloudinary/issues/1
-  /*form.parse(req, function (err, fields, files) {
-    console.log("Form parsed.")
+  //form.parse(req, function (err, fields, files) {
+    //console.log("Form parsed.")
     verifyAuthorization(req, function(verified) {
       if (!verified) {
         console.log("Post Unauthorized.")
-        res.status(403).send({success: false, msg: 'Unauthorized.'});
+        res.status(403).send({success: false, msg: 'Unauthorized'});
         return
       }
       else {
         console.log("Post Authorized.")
-        updateCredentials(chatbot_id, fields, files, res)
+        updateCredentials(chatbot_id, data, res, () => {
+          //res.writeHead(200, {'content-type': 'application/json'});
+          res.send({"success": true});
+          res.end();
+        });
       }
-    })
-  */
-  updateCredentials(chatbot_id, data, res, () => {
-    res.writeHead(200, {'content-type': 'application/json'});
-    res.write('{\"success\": true}');
-    res.end();
-  })
+    });
 });
 
 async function updateCredentials(chatbot_id, data, res, callback) {
@@ -363,7 +362,7 @@ async function updateCredentials(chatbot_id, data, res, callback) {
 }
 
 app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
-  verifyAuthorization(req, function(verified) {
+  verifyAuthorization(req, async (verified) => {
     if (!verified) {
       console.log("Get Unauthorized.")
       res.status(403).send({success: false, msg: 'Unauthorized.'});
@@ -372,9 +371,10 @@ app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
       console.log("Get Authorized.")
       const chatbot_id = req.params.chatbot;
       console.log("getting chatbot: ", chatbot_id)
-      get(chatbot_id, function(err, reply) {
-        let response = {}
-        if (err || !reply) {
+      try {
+        const reply = await db.get(chatbot_id);
+        console.log("reply:", reply)
+        if (!reply) {
           response.success = false
           response.errMessage = err
           res.writeHead(200, {'content-type': 'application/json'});
@@ -382,18 +382,23 @@ app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
           res.end();
           return
         }
-        response.success = true
-        if (reply.value && reply.value.credentials && reply.value.credentials_filename) {
-          response.credentials = reply.value.credentials_filename
-        } else {
-          response.credentials = null
+        else {
+          let response = {}
+          response.success = true
+          response.value = reply;
+          //res.writeHead(200, {'content-type': 'application/json'});
+          res.send(response);
+          res.end();
         }
-        response.language = reply.value.language
-        response.kbs = reply.value.kbs
+      }
+      catch (err) {
+        response.success = false
+        response.errMessage = err
         res.writeHead(200, {'content-type': 'application/json'});
         res.write(JSON.stringify(response));
         res.end();
-      })
+        return
+      }
     }
   });
 });
@@ -458,8 +463,15 @@ function getBotDetail(project_id, chatbot_id, token, callback) {
     method: 'GET'
   },
   function(err, response, resbody) {
-    console.log("getBotDetail.resbody: ", resbody)
-    callback(err, resbody)
+    if (callback) {
+      if (response.statusCode >= 400) {
+        callback("Unauthorized", null);
+      }
+      else {
+        console.log("getBotDetail.resbody: ", resbody)
+        callback(null, resbody);
+      }
+    }
   });
 }
 
@@ -471,44 +483,6 @@ function getToken(headers) {
   }
 }
 
-/******************************************
- *********** BOT PERSISTENCE **************
- ******************************************/
-
-const BOTS_COLLECTION = "bots"
-function get(key) {
-  
-  // db.collection(BOTS_COLLECTION).findOne({ key: key }, function(err, doc) {
-  //   callback(err, doc)
-  // });
-}
-
-function set(key, content, callback) {
-  // db.collection(BOTS_COLLECTION).updateOne({key: key}, { $set: { value: content, key: key } }, { upsert: true }, function(err, doc) {
-  //   callback(err)
-  // });
-}
-
-function remove(key, callback) {
-  // db.collection(BOTS_COLLECTION).deleteOne({key: key}, function(err) {
-  //   console.log("delete err? ", err)
-  //   callback(err)
-  // });
-}
-
-// console.log("connecting to mongodb...")
-// mongodb.MongoClient.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true }, function (err, client) {
-//   if (err) {
-//     console.log(err);
-//     process.exit(1);
-//   } else {
-//     console.log("MongoDB successfully connected.")
-//   }
-//   db = client.db();
-//   console.log("Database connection ready");
-//   db.collection("bots").createIndex(
-//     { "key": 1 }, { unique: true }
-//   );
 console.log("Starting RASA connector...");
 console.log("Connecting to mongodb...");
 db.connect(process.env.MONGODB_URI, () => {
@@ -518,8 +492,6 @@ db.connect(process.env.MONGODB_URI, () => {
     console.log('RASA connector listening on port ', port);
   });
 });
-  
-// });
 
 app.get('/', (req, res) => {
   res.write("Hello from RASA connector 0.1.0");
