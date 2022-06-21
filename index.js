@@ -371,6 +371,7 @@ app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
       console.log("Get Authorized.")
       const chatbot_id = req.params.chatbot;
       console.log("getting chatbot: ", chatbot_id)
+      let response = {};
       try {
         const reply = await db.get(chatbot_id);
         console.log("reply:", reply)
@@ -383,7 +384,6 @@ app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
           return
         }
         else {
-          let response = {}
           response.success = true
           response.value = reply;
           //res.writeHead(200, {'content-type': 'application/json'});
@@ -392,6 +392,7 @@ app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
         }
       }
       catch (err) {
+        console.error("error:", err);
         response.success = false
         response.errMessage = err
         res.writeHead(200, {'content-type': 'application/json'});
