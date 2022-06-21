@@ -408,17 +408,14 @@ app.delete('/botcredendials/:project/bots/:chatbot', (req, res) => {
   verifyAuthorization(req, function(verified) {
     if (!verified) {
       console.log("Delete Unauthorized.")
-      res.status(403).send({success: false, msg: 'Unauthorized.'});
+      res.status(403).send({success: false, msg: 'Unauthorized'});
     }
     else {
       const chatbot_id = req.params.chatbot;
       console.log("deleting chatbot: ", chatbot_id)
-      remove(chatbot_id, function(err) {
-        // REMOVED: [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent to the client
-        // res.writeHead(200, {'content-type': 'application/json'});
-        res.status(200).send({success: true});
-        res.end();
-      })
+      await db.remove(chatbot_id);
+      res.status(200).send({success: true});
+      res.end();
     }
   });
 });
