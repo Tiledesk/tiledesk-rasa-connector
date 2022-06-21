@@ -404,8 +404,8 @@ app.get('/botcredendials/:project/bots/:chatbot', (req, res) => {
   });
 });
 
-app.delete('/botcredendials/:project/bots/:chatbot', (req, res) => {
-  verifyAuthorization(req, function(verified) {
+app.delete('/botcredendials/:project/bots/:chatbot', async (req, res) => {
+  verifyAuthorization(req, async (verified) => {
     if (!verified) {
       console.log("Delete Unauthorized.")
       res.status(403).send({success: false, msg: 'Unauthorized'});
