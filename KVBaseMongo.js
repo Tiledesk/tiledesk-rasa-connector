@@ -2,11 +2,23 @@ const mongodb = require("mongodb");
 
 class KVBaseMongo {
 
-  constructor() {
-    this.KV_COLLECTION = 'kvstore'
+  /**
+   * Constructor for KVBaseMongo object
+   *
+   * @example
+   * const { KVBaseMongo } = require('./KVBaseMongo');
+   * let db = new KVBaseMongo("kvstore");
+   * 
+   * @param {KVBASE_COLLECTION} The name of the Mongodb collection used as key-value store. Mandatory.
+   */
+  constructor(KVBASE_COLLECTION) {
+    if (!KVBASE_COLLECTION) {
+      throw new Error('KVBASE_COLLECTION (the name of the Mongodb collection used as key-value store) is mandatory.');
+    }
+    this.KV_COLLECTION = KVBASE_COLLECTION;
   }
 
-  connect(MONGODB_URI, KVBASE_COLLECTION, callback) {
+  connect(MONGODB_URI, callback) {
     mongodb.MongoClient.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true }, (err, client) => {
       if (err) {
         console.log(err);

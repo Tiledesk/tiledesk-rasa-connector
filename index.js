@@ -10,9 +10,9 @@ const fs = require('fs');
 const request = require('request');
 const { TiledeskChatbotClient } = require('@tiledesk/tiledesk-chatbot-client');
 const jwt = require('jsonwebtoken');
-let { KVBaseMongo } = require('./KVBaseMongo');
+const { KVBaseMongo } = require('./KVBaseMongo');
 var mongodb = require("mongodb");
-let db = new KVBaseMongo();
+let db;
 
 var app = express();
 app.use(cors());
@@ -375,8 +375,11 @@ function getToken(headers) {
 
 console.log("Starting RASA connector...");
 console.log("Connecting to mongodb...");
+console.log("Found process.env.KVBASE_COLLECTION:", process.env.KVBASE_COLLECTION);
 const kvbase_collection = process.env.KVBASE_COLLECTION ? process.env.KVBASE_COLLECTION : 'kvstore';
-db.connect(process.env.MONGODB_URI, kvbase_collection, () => {
+console.log("kvbase_collection:", kvbase_collection);
+db = new KVBaseMongo(kvbase_collection);
+db.connect(process.env.MONGODB_URI, () => {
   console.log("MongoDB successfully connected.");
   var port = process.env.PORT || 3000;
   app.listen(port, function () {
