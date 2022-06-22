@@ -6,7 +6,7 @@ class KVBaseMongo {
     this.KV_COLLECTION = 'kvstore'
   }
 
-  connect(MONGODB_URI, callback) {
+  connect(MONGODB_URI, KVBASE_COLLECTION, callback) {
     mongodb.MongoClient.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true }, (err, client) => {
       if (err) {
         console.log(err);

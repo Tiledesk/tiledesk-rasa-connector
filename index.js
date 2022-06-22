@@ -375,7 +375,8 @@ function getToken(headers) {
 
 console.log("Starting RASA connector...");
 console.log("Connecting to mongodb...");
-db.connect(process.env.MONGODB_URI, () => {
+const kvbase_collection = process.env.KVBASE_COLLECTION ? process.env.KVBASE_COLLECTION : 'kvstore';
+db.connect(process.env.MONGODB_URI, kvbase_collection, () => {
   console.log("MongoDB successfully connected.");
   var port = process.env.PORT || 3000;
   app.listen(port, function () {
