@@ -75,102 +75,6 @@ function sendMessage(msg_json, project_id, recipient, token, callback) {
   );
 }
 
-// function runDFQueryOnTiledeskChatbotId(text, chatbot_id, sessionId, payload, callback) {
-//   if (!text) throw "Text can't be null"
-//   // console.log("DF QUERY: chatbot_id: ", chatbot_id);
-//   // console.log("DF QUERY: sessionId: ", sessionId);
-//   // console.log("DF QUERY: query text: ", text);
-//   console.log("DF QUERY: payload: ", JSON.stringify(payload))
-//   const payload_for_df = payload || {}
-//   getChatbotData(chatbot_id, function(value) {
-//     // console.log("VALUE: ", value)
-    
-//     let credentials = value.credentials
-//     let kbs_comma_separated_string = value.kbs
-//     let language_code = value.language
-//     // console.log("CREDENTIALS: ", credentials)
-//     console.log("KBS: ", kbs_comma_separated_string)
-//     console.log("language: ", language_code)
-//     const agent_id = credentials.project_id
-//     console.log("agent_id: ", agent_id)
-//     let kbs_array = null
-//     if (kbs_comma_separated_string) {
-//       const split_pattern = /[,]/mg
-//       let kbs = kbs_comma_separated_string.split(split_pattern)
-//       if (kbs.length > 0) {
-//         kbs_array = []
-//         for (var i=0; i < kbs.length; i++) {
-//           let kb_id = kbs[i].trim()
-//           if (kb_id != '') {
-//             const knowledgeBaseFullName = kbs[i].trim() //`NzEwOTcxNzA2MzEwNjU2MDAwMA`;
-//             const knowbase = new dialogflow.KnowledgeBasesClient();
-//             const knowledgeBasePath = knowbase.knowledgeBasePath(
-//               agent_id,
-//               knowledgeBaseFullName
-//             );
-//             kbs_array.push(knowledgeBasePath)
-//           }
-//         }
-//       }
-//     }
-    
-//     const sessionClient = new dialogflow.SessionsClient({'credentials':credentials});
-//     const sessionPath = sessionClient.sessionPath(agent_id, sessionId);
-//     console.log("sessionPath: ", sessionPath)
-//     var request;
-    
-//     console.log("DF QUERY. Input Text: ", text)
-//     request = {
-//       session: sessionPath,
-//       queryInput: {
-//         text: {
-//           text: text,
-//           languageCode: language_code
-//         },
-//       },
-//       queryParams: {
-//         // payload: structjson.jsonToStructProto(payload_for_df)
-//       },
-//     };
-//     console.log("payload_for_df: " + payload_for_df)
-//     if (payload_for_df) {
-//       request.queryParams.payload = structjson.jsonToStructProto(payload_for_df)
-//     }
-//     if (kbs_array) {
-//       request.queryParams.knowledgeBaseNames = kbs_array
-//     }
-//     // console.log("REQUEST: ", request)
-//     // Send request and log result
-//     sessionClient.detectIntent(request).then (function(responses) {
-//       var responses_str = JSON.stringify(responses)
-//       const result = responses[0].queryResult;
-//       // console.log("RESULT: ", result);
-//       // console.log(`Query text: ${result.queryText}`);
-//       // console.log("intent.isFallback?", result.intent.isFallback);
-//       // console.log("intent.displayName?", result.intent.displayName);
-//       // console.log(`Detected Intent: ${result.intent.displayName}`);
-//       // console.log(`Confidence: ${result.intentDetectionConfidence}`);
-//       // console.log(`Query Result: ${result.fulfillmentText}`);
-//       if (result.knowledgeAnswers && result.knowledgeAnswers.answers) {
-//         const answers = result.knowledgeAnswers.answers;
-//         console.log(`There are ${answers.length} answer(s);`);
-//         answers.forEach(a => {
-//           console.log(`   answer: ${a.answer}`);
-//           console.log(`   confidence: ${a.matchConfidence}`);
-//           console.log(`   match confidence level: ${a.matchConfidenceLevel}`);
-//         });
-//       }
-//       callback(result);
-//     });
-//   });
-// }
-
-/**********************
-***** NEW BOT *********
-***********************/
-
-const CLIENT_TIMESTAMP = "clienttimestamp"
-
 app.post("/rasabot", async (req, res) => {
   // delete req.body.payload.request.messages;
   console.log(" ******* NEW REQUEST *******\n\n\n")
@@ -184,8 +88,6 @@ app.post("/rasabot", async (req, res) => {
   // console.log("PROJECT-ID:", project_id)
   const API_LOG = process.env.API_LOG === 'true' ? true : false;
   
-  // const chatbot_name = req.body.hook.name;
-  
   var _API_URL = process.env.API_ENDPOINT
   const cbclient = new TiledeskChatbotClient({request: req, response: res, APIURL: _API_URL, APIKEY: '____APIKEY____', log: API_LOG});
 
@@ -194,21 +96,18 @@ app.post("/rasabot", async (req, res) => {
   
   var chatbot_id;
   var chatbot_name;
-  // if (req.params.chatbot) {
-  //   chatbot_id = req.params.chatbot;
-  //   console.log("chatbot_id from params:", chatbot_id)
-  // }
-  // else {
-    chatbot_id = cbclient.chatbot_id; // const chatbot_name = req.body.hook._id;
+  chatbot_id = cbclient.chatbot_id; // const chatbot_name = req.body.hook._id;
     chatbot_name = cbclient.chatbot_name; // const chatbot_name = req.body.hook.name;
     // console.log("chatbot_id from body:", chatbot_id)
   // }
   console.log("CHATBOT-ID: ", chatbot_id)
 
   console.log(" ******* TEXT *******" + cbclient.text)
-  /*let payload = {}*/
+  // RASA Tiledesk payload: HOW TO USE IT?
+  let payload = {}
+  payload.tiledesk = req.body;
+  // RASA Tiledesk payload: END
   let conversation = cbclient.supportRequest;
-  /*payload.tiledesk = req.body;*/
   // immediately reply back
   res.status(200).send({"success":true});
   // updates request's first text, so agents can see
@@ -217,16 +116,12 @@ app.post("/rasabot", async (req, res) => {
     var properties = {
       "first_text": cbclient.text
     }
-    cbclient.tiledeskClient.updateRequestProperties(conversation.request_id, properties, function(err) {
+  cbclient.tiledeskClient.updateRequestProperties(conversation.request_id, properties, function(err) {
       console.log("request updated with text: ", cbclient.text)
-    })
+    });
   }
 
   const rasa_user_id = conversation.request_id;
-  // runDFQueryOnTiledeskChatbotId(cbclient.text, chatbot_id, dialogflow_session_id, payload, function(result) {
-  //   sendBackToTiledesk(cbclient, req.body.payload, result);
-  // });
-
   console.log("looking for chatbot", chatbot_id)
   const chatbotInfo = await db.get(chatbot_id);
   console.log("Chatbot found!", chatbotInfo);
@@ -234,7 +129,6 @@ app.post("/rasabot", async (req, res) => {
   runRASAQuery(RASAurl, rasa_user_id, cbclient.text, function(result) {
     console.log("BOT: RASA REPLY: " + JSON.stringify(result));
     if(res.statusCode === 200) {
-
       if (result && result.length > 0 && result[0].text) {
         cbclient.tiledeskClient.sendSupportMessage(
           conversation.request_id,
@@ -278,8 +172,6 @@ function sendBackToTiledesk(cbclient, payload, result) {
     // console.log("FIRING NOT FOUND TEXT:", cbclient.text)
     // fireNotFoundEvent(cbclient, is_fallback, intent_confidence);
   // }
-  
-
 }
 
 function fireNotFoundEvent(cbclient, is_fallback, confidence) {
@@ -449,7 +341,7 @@ function verifyAuthorization(req, callback) {
 }
 
 function getBotDetail(project_id, chatbot_id, token, callback) {
-  // https://tiledesk-server-pre.herokuapp.com/5e51984fc9c41700175e165c/faq_kb/5e519889c9c41700175e1660
+  // e.g. https://tiledesk-server-pre.herokuapp.com/5e51984fc9c41700175e165c/faq_kb/5e519889c9c41700175e1660
   const URL = `${process.env.API_ENDPOINT}/${project_id}/faq_kb/${chatbot_id}`
   console.log("getBotDetail URL:", URL)
   request({
