@@ -1,7 +1,7 @@
 {
-  "name": "tiledesk-node-jwt",
-  "version": "1.1.0",
-  "description": "Tiledesk nodejs jwt generator",
+  "name": "@tiledesk/tiledesk-rasa-connector",
+  "version": "1.0.0",
+  "description": "Tiledesk RASA connector",
   "engines": {
     "node": "12.x"
   },
@@ -12,17 +12,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Tiledesk/tiledesk-node-jwt.git"
+    "url": "git+https://github.com/Tiledesk/tiledesk-rasa-connector.git"
   },
-  "author": "Andrea Leo",
-  "license": "AGPL-3.0",
+  "author": "Andrea Sponziello",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Tiledesk/tiledesk-node-jwt/issues"
+    "url": "https://github.com/Tiledesk/tiledesk-rasa-connector/issues"
   },
-  "homepage": "https://github.com/Tiledesk/tiledesk-node-jwt#readme",
+  "homepage": "https://github.com/Tiledesk/tiledesk-rasa-connector#readme",
   "dependencies": {
     "@tiledesk/tiledesk-chatbot-client": "^0.5.30",
-    "@tiledesk/tiledesk-rasa-connector": "^1.0.0",
     "actions-on-google": "^2.12.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",

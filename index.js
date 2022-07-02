@@ -2,7 +2,8 @@ require('dotenv').config();
 var express = require('express');
 
 var app = express();
-const rasa = require("./rasaRoute.js");
+//const rasa = require("./rasaRoute.js");
+const rasa = require("@tiledesk/tiledesk-rasa-connector");
 
 const rasaRouter = rasa.router;
 app.use("/rasa", rasaRouter);
