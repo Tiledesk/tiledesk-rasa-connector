@@ -12,7 +12,11 @@ const request = require('request');
 const { TiledeskChatbotClient } = require('@tiledesk/tiledesk-chatbot-client');
 const jwt = require('jsonwebtoken');
 const { KVBaseMongo } = require('./KVBaseMongo');
-var mongodb = require("mongodb");
+const mongodb = require("mongodb");
+const { MessagePipeline } = require('./MessagePipeline');
+const { DirectivesChatbotPlug } = require('./DirectivesChatbotPlug');
+const { SplitsChatbotPlug } = require('./SplitsChatbotPlug');
+const { MarkbotChatbotPlug } = require('./MarkbotChatbotPlug');
 let db;
 
 //var app = express();
@@ -100,12 +104,13 @@ router.post("/rasabot", async (req, res) => {
   // console.log('req.body.hook:', JSON.stringify(req.body.hook));
   // console.log("PROJECT-ID:", project_id)
   const API_LOG = process.env.API_LOG === 'true' ? true : false;
-  
   var _API_URL = API_ENDPOINT; //process.env.API_ENDPOINT
   const cbclient = new TiledeskChatbotClient({request: req, response: res, APIURL: _API_URL, APIKEY: '____APIKEY____', log: API_LOG});
+  const message = req.body.payload;
   if (log) {
-    console.log("cbclient.APIURL", cbclient.APIURL)
-    console.log("cbclient.tiledeskClient.APIURL",   cbclient.tiledeskClient.APIURL);
+    console.log("message:", message);
+    console.log("cbclient.APIURL", cbclient.APIURL);
+    console.log("cbclient.tiledeskClient.APIURL", cbclient.tiledeskClient.APIURL);
   }
   
   var chatbot_id;
@@ -145,23 +150,21 @@ router.post("/rasabot", async (req, res) => {
     if (log) {console.log("Chatbot found!", chatbotInfo);}
   }
   const RASAurl = chatbotInfo.serverUrl;
-  runRASAQuery(RASAurl, rasa_user_id, cbclient.text, function(result) {
+  runRASAQuery(RASAurl, rasa_user_id, cbclient.text, async (result) => {
     if (log) {
       console.log("BOT: RASA REPLY: " + JSON.stringify(result));
     }
     if(res.statusCode === 200) {
       if (result && result.length > 0 && result[0].text) {
-        cbclient.tiledeskClient.sendSupportMessage(
-          conversation.request_id,
-          {
-            text: result[0].text
-          },
-          () => {
-            if (log) {
+        const initial_bot_answer = result[0].text;
+        const message = {
+            text: initial_bot_answer
+          }
+        const bot_answer = await execPipeline(message, cbclient, API_ENDPOINT, {}, () => {
+          if (log) {
               console.log("Message sent.");
             }
-          }
-        );
+        });
       }
       
       /* you can optionally check the intent confidence
@@ -174,6 +177,37 @@ router.post("/rasabot", async (req, res) => {
     }
   });
 })
+
+async function execPipeline(static_bot_answer, cbclient, API_ENDPOINT, context, completionCallback) {
+  console.log("static_bot_answer:", static_bot_answer);
+  // message pipeline
+  const messagePipeline = new MessagePipeline(static_bot_answer, context);
+  let directivesPlug = new DirectivesChatbotPlug(cbclient.supportRequest, API_ENDPOINT, cbclient.token);
+  messagePipeline.addPlug(directivesPlug);
+  messagePipeline.addPlug(new SplitsChatbotPlug());
+  messagePipeline.addPlug(new MarkbotChatbotPlug());
+  const bot_answer = await messagePipeline.exec();
+  if (log) {
+    console.log("End pipeline, bot_answer:", JSON.stringify(bot_answer));
+  }
+  
+  cbclient.tiledeskClient.sendSupportMessage(
+    cbclient.supportRequest.request_id, bot_answer,
+    () => {
+      if (log) {
+        console.log("Message sent.");
+      }
+      directivesPlug.processDirectives(() => {
+        if (log) {
+          console.log("End processing directives.");
+          if (completionCallback) {
+            completionCallback();
+          }
+        }
+      });
+    }
+  );
+}
 
 function sendBackToTiledesk(cbclient, payload, result) {
   const is_fallback = result.intent.isFallback;
