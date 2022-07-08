@@ -2,18 +2,18 @@ require('dotenv').config();
 var express = require('express');
 
 var app = express();
-//const rasa = require("./rasaRoute.js");
-const rasa = require("@tiledesk/tiledesk-rasa-connector");
-
-const rasaRouter = rasa.router;
-app.use("/rasa", rasaRouter);
+//const rasa = require("@tiledesk/tiledesk-rasa-connector");
+const rasa = require("./rasaRoute");
+const rasaRoute = rasa.router;
+app.use("/rasa", rasaRoute);
 
 rasa.startRasa(
   {
     KVBASE_COLLECTION : process.env.KVBASE_COLLECTION,
     MONGODB_URI: process.env.MONGODB_URI,
-    chatbotInfo: {
-      serverUrl: 'http://52.16.50.206/webhooks/rest/webhook'
+    API_ENDPOINT: process.env.API_ENDPOINT,
+    chatbotInfo: { // solo per test, ignorare in prod
+      serverUrl: 'http://52.215.188.135/webhooks/rest/webhook'
     },
     log: false
   }, () => {
@@ -22,7 +22,14 @@ rasa.startRasa(
     app.listen(port, function () {
       console.log('RASA connector listening on port ', port);
     });
-  });
+  }
+);
+
+//go();
+
+function go() {
+  throw "ERRROROROROR"
+}
 
 app.get('/', (req, res) => {
   res.write("Hello from RASA connector");

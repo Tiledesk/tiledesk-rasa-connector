@@ -22,7 +22,7 @@
   "homepage": "https://github.com/Tiledesk/tiledesk-node-jwt#readme",
   "dependencies": {
     "@tiledesk/tiledesk-chatbot-client": "^0.5.30",
-    "@tiledesk/tiledesk-rasa-connector": "^1.0.1",
+    "@tiledesk/tiledesk-rasa-connector": "^1.0.2",
     "actions-on-google": "^2.12.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",

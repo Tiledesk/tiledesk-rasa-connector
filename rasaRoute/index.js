@@ -22,6 +22,7 @@ router.use(bodyParser.urlencoded({ extended: true , limit: '50mb'}));
 
 let chatbotInfo = null;
 let log = true;
+let API_ENDPOINT = null;
 // const structjson = require('./structJson.js');
 
 // async function getChatbotData(chatbot_id, callback) {
@@ -100,7 +101,7 @@ router.post("/rasabot", async (req, res) => {
   // console.log("PROJECT-ID:", project_id)
   const API_LOG = process.env.API_LOG === 'true' ? true : false;
   
-  var _API_URL = process.env.API_ENDPOINT
+  var _API_URL = API_ENDPOINT; //process.env.API_ENDPOINT
   const cbclient = new TiledeskChatbotClient({request: req, response: res, APIURL: _API_URL, APIKEY: '____APIKEY____', log: API_LOG});
   if (log) {
     console.log("cbclient.APIURL", cbclient.APIURL)
@@ -410,7 +411,7 @@ function verifyAuthorization(req, callback) {
 
 function getBotDetail(project_id, chatbot_id, token, callback) {
   // e.g. https://tiledesk-server-pre.herokuapp.com/5e51984fc9c41700175e165c/faq_kb/5e519889c9c41700175e1660
-  const URL = `${process.env.API_ENDPOINT}/${project_id}/faq_kb/${chatbot_id}`
+  const URL = `${API_ENDPOINT}/${project_id}/faq_kb/${chatbot_id}`
   if (log) {
     console.log("getBotDetail URL:", URL)
   }
@@ -446,13 +447,21 @@ function getToken(headers) {
 }
 
 function startRasa(settings, completionCallback) {
-  
-  console.log("Starting RASA with Settings:", settings);
+  //throw "ERRORRRRRRRR";
+  console.log("Starting RASA with Settings:......", settings);
   if (!settings.MONGODB_URI) {
     throw new Error("settings.MONGODB_URI is mandatory.");
   }
+  if (!settings.API_ENDPOINT) {
+    throw new Error("settings.API_ENDPOINT is mandatory.");
+  }
+  else {
+    API_ENDPOINT = settings.API_ENDPOINT;
+    console.log("(RASA) settings.API_ENDPOINT:", API_ENDPOINT);
+  }
   if (settings.chatbotInfo) {
     chatbotInfo = settings.chatbotInfo;
+    console.log("(RASA) Got chatbotInfo:", chatbotInfo);
   }
   if (!settings.log) {
     log = false;
