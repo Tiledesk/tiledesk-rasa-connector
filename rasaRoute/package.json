@@ -1,9 +1,9 @@
 {
   "name": "@tiledesk/tiledesk-rasa-connector",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Tiledesk RASA connector",
   "engines": {
-    "node": "12.x"
+    "node": ">=12.x"
   },
   "main": "index.js",
   "scripts": {

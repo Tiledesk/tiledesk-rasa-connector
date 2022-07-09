@@ -38,7 +38,9 @@ let API_ENDPOINT = null;
 
 function runRASAQuery(RASAurl, rasa_sender_id, text, callback) {
   if (log) {
-    console.log("Using RASA URL:", RASAurl)
+    console.log("Using RASAurl:", RASAurl)
+    console.log("Using rasa_sender_id:", rasa_sender_id)
+    console.log("Using text:", text)
   }
   request(
     {
@@ -64,7 +66,7 @@ function runRASAQuery(RASAurl, rasa_sender_id, text, callback) {
       }
       else {
         if (log) {
-          console.log("RASA REPLY:", resbody);
+          console.log("RASA reply:", resbody);
         }
         callback(resbody);
       }
@@ -157,9 +159,34 @@ router.post("/rasabot", async (req, res) => {
     if(res.statusCode === 200) {
       if (result && result.length > 0 && result[0].text) {
         const initial_bot_answer = result[0].text;
-        const message = {
-            text: initial_bot_answer
+        // splits
+        let commands = null;
+        if (result.length > 1) {
+          commands = [];
+          for (i = 0; i < result.length; i++) {
+            commands.push({
+              type: "message",
+              "message": {
+                text: result[i].text
+              }
+            });
+            if (i <= result.length - 2) {
+              commands.push({
+              type: "wait",
+              time: 500
+            });
+            }
           }
+        }
+        const message = {
+          text: initial_bot_answer
+        }
+        if (commands) {
+          if (!message.attributes) {
+            message.attributes = {}
+          }
+          message.attributes.commands = commands
+        }
         const bot_answer = await execPipeline(message, cbclient, API_ENDPOINT, {}, () => {
           if (log) {
               console.log("Message sent.");
@@ -181,6 +208,12 @@ router.post("/rasabot", async (req, res) => {
 async function execPipeline(static_bot_answer, cbclient, API_ENDPOINT, context, completionCallback) {
   console.log("static_bot_answer:", static_bot_answer);
   // message pipeline
+  if (!static_bot_answer.attributes) {
+    static_bot_answer.attributes = {}
+  }
+  static_bot_answer.attributes.directives = true;
+  static_bot_answer.attributes.splits = false;
+  static_bot_answer.attributes.markbot = true;
   const messagePipeline = new MessagePipeline(static_bot_answer, context);
   let directivesPlug = new DirectivesChatbotPlug(cbclient.supportRequest, API_ENDPOINT, cbclient.token);
   messagePipeline.addPlug(directivesPlug);
@@ -200,9 +233,9 @@ async function execPipeline(static_bot_answer, cbclient, API_ENDPOINT, context, 
       directivesPlug.processDirectives(() => {
         if (log) {
           console.log("End processing directives.");
-          if (completionCallback) {
-            completionCallback();
-          }
+        }
+        if (completionCallback) {
+          completionCallback();
         }
       });
     }

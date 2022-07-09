@@ -13,9 +13,9 @@ rasa.startRasa(
     MONGODB_URI: process.env.MONGODB_URI,
     API_ENDPOINT: process.env.API_ENDPOINT,
     chatbotInfo: { // solo per test, ignorare in prod
-      serverUrl: 'http://52.215.188.135/webhooks/rest/webhook'
+      serverUrl: 'http://34.243.156.17/webhooks/rest/webhook'
     },
-    log: false
+    log: true
   }, () => {
     console.log("RASA route successfully started.");
     var port = process.env.PORT || 3000;
