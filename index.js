@@ -2,8 +2,8 @@ require('dotenv').config();
 var express = require('express');
 
 var app = express();
-//const rasa = require("@tiledesk/tiledesk-rasa-connector");
-const rasa = require("./rasaRoute");
+const rasa = require("@tiledesk/tiledesk-rasa-connector");
+//const rasa = require("./rasaRoute");
 const rasaRoute = rasa.router;
 app.use("/rasa", rasaRoute);
 
@@ -13,7 +13,7 @@ rasa.startRasa(
     MONGODB_URI: process.env.MONGODB_URI,
     API_ENDPOINT: process.env.API_ENDPOINT,
     chatbotInfo: { // solo per test, ignorare in prod
-      serverUrl: 'http://34.243.156.17/webhooks/rest/webhook'
+      serverUrl: 'http://34.254.90.35/webhooks/rest/webhook'
     },
     log: true
   }, () => {
