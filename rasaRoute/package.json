@@ -1,6 +1,6 @@
 {
   "name": "@tiledesk/tiledesk-rasa-connector",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Tiledesk RASA connector",
   "engines": {
     "node": ">=12.x"
@@ -35,6 +35,7 @@
     "mysql": "^2.18.1",
     "redis": "^3.0.2",
     "request": "^2.88.2",
-    "uuid": "^3.4.0"
+    "uuid": "^3.4.0",
+    "@tiledesk/tiledesk-kvbasemongo": "^1.0.0"
   }
 }
