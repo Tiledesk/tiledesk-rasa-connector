@@ -1,5 +1,5 @@
 {
-  "name": "tiledesk-node-jwt",
+  "name": "tiledesk-rasa-connector-test-app",
   "version": "1.1.0",
   "description": "Tiledesk RASA Connector testbed",
   "engines": {
