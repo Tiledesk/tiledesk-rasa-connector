@@ -1,7 +1,7 @@
 {
-  "name": "@tiledesk/tiledesk-rasa-connector",
+  "name": "@tiledesk/tiledesk-kvbasemongo",
   "version": "1.0.0",
-  "description": "Tiledesk key values store adapter for MongoDB",
+  "description": "A key-value store adapter for MongoDB",
   "engines": {
     "node": ">=12.x"
   },
