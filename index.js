@@ -12,9 +12,9 @@ rasa.startRasa(
     KVBASE_COLLECTION : process.env.KVBASE_COLLECTION,
     MONGODB_URI: process.env.MONGODB_URI,
     API_ENDPOINT: process.env.API_ENDPOINT,
-    chatbotInfo: { // solo per test, ignorare in prod
-      serverUrl: 'http://34.254.90.35/webhooks/rest/webhook'
-    },
+    //chatbotInfo: { // solo per test, ignorare in prod
+    //  serverUrl: 'http://34.254.90.35/webhooks/rest/webhook'
+    //},
     log: true
   }, () => {
     console.log("RASA route successfully started.");
