@@ -5,7 +5,7 @@ var app = express();
 const rasa = require("@tiledesk/tiledesk-rasa-connector");
 //const rasa = require("./rasaRoute");
 const rasaRoute = rasa.router;
-app.use("/rasa", rasaRoute);
+app.use("/", rasaRoute); // /rasa
 
 rasa.startRasa(
   {
