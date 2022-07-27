@@ -146,10 +146,17 @@ router.post("/rasabot", async (req, res) => {
   }
 
   const rasa_user_id = conversation.request_id;
+  if (log) {
+    console.log("rasa_user_id: ", rasa_user_id)
+  }
+  if (log) {console.log("Searching chatbotInfo with key: ", chatbot_id)}
   if (!chatbotInfo) {
     if (log) {console.log("looking for chatbot", chatbot_id)}
     chatbotInfo = await db.get(chatbot_id);
     if (log) {console.log("Chatbot found!", chatbotInfo);}
+  }
+  else {
+    if (log) {console.log("Already have chatbotInfo!", chatbotInfo)}
   }
   const RASAurl = chatbotInfo.serverUrl;
   runRASAQuery(RASAurl, rasa_user_id, cbclient.text, async (result) => {
