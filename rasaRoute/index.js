@@ -24,7 +24,7 @@ router.use(cors());
 router.use(bodyParser.json({limit: '50mb'}));
 router.use(bodyParser.urlencoded({ extended: true , limit: '50mb'}));
 
-let chatbotInfo = null;
+//let chatbotInfo = null;
 let log = true;
 let API_ENDPOINT = null;
 // const structjson = require('./structJson.js');
@@ -150,13 +150,17 @@ router.post("/rasabot", async (req, res) => {
     console.log("rasa_user_id: ", rasa_user_id)
   }
   if (log) {console.log("Searching chatbotInfo with key: ", chatbot_id)}
+  let chatbotInfo;
   if (!chatbotInfo) {
     if (log) {console.log("looking for chatbot", chatbot_id)}
+    console.log("looking for chatbot...", chatbot_id)
     chatbotInfo = await db.get(chatbot_id);
     if (log) {console.log("Chatbot found!", chatbotInfo);}
+    console.log("Chatbot found...!", chatbotInfo);
   }
   else {
     if (log) {console.log("Already have chatbotInfo!", chatbotInfo)}
+    console.log("Already have chatbotInfo...!", chatbotInfo)
   }
   const RASAurl = chatbotInfo.serverUrl;
   runRASAQuery(RASAurl, rasa_user_id, cbclient.text, async (result) => {
@@ -533,10 +537,10 @@ function startRasa(settings, completionCallback) {
     API_ENDPOINT = settings.API_ENDPOINT;
     console.log("(RASA) settings.API_ENDPOINT:", API_ENDPOINT);
   }
-  if (settings.chatbotInfo) {
+  /*if (settings.chatbotInfo) {
     chatbotInfo = settings.chatbotInfo;
     console.log("(RASA) Got chatbotInfo:", chatbotInfo);
-  }
+  }*/
   if (!settings.log) {
     log = false;
   }
