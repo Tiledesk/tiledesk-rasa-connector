@@ -1,6 +1,6 @@
 {
   "name": "@tiledesk/tiledesk-rasa-connector",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Tiledesk RASA connector",
   "engines": {
     "node": ">=12.x"
