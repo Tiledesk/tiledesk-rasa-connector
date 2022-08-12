@@ -1,5 +1,7 @@
 # Tiledesk native RASA connector
 
+### 0.1.8 - added support for RASA buttons and images. Removed support for Tiledesk splitted messages and markbot.
+
 ### 0.1.6 - kvbasemongo externalized
 
 ### 0.1.5 - added support for RASA splitted messages. Now the Connector breaks long RASA answers into small sentences using "commands"

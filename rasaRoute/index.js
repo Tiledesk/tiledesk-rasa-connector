@@ -6,17 +6,27 @@ var cors = require('cors');
 const uuid = require('uuid');
 const bodyParser = require('body-parser');
 const https = require('https');
-const formidable = require('formidable');
 const fs = require('fs');
-const request = require('request');
+//const request = require('request');
 const { TiledeskChatbotClient } = require('@tiledesk/tiledesk-chatbot-client');
 const jwt = require('jsonwebtoken');
 const { KVBaseMongo } = require('@tiledesk/tiledesk-kvbasemongo');
 const mongodb = require("mongodb");
-const { MessagePipeline } = require('./MessagePipeline');
-const { DirectivesChatbotPlug } = require('./DirectivesChatbotPlug');
-const { SplitsChatbotPlug } = require('./SplitsChatbotPlug');
-const { MarkbotChatbotPlug } = require('./MarkbotChatbotPlug');
+
+// plugs local (dev in tybot: https://replit.com/@tiledesk/tiledesk-chatbot-external-github#tybotRoute/index.js)
+//const { MessagePipeline } = require('./MessagePipeline');
+//const { DirectivesChatbotPlug } = require('./DirectivesChatbotPlug');
+//const { SplitsChatbotPlug } = require('./SplitsChatbotPlug');
+//const { MarkbotChatbotPlug } = require('./MarkbotChatbotPlug');
+
+// plugs prod
+const { MessagePipeline } =  require('@tiledesk/tiledesk-chatbot-plugs/MessagePipeline');
+const { DirectivesChatbotPlug } = require('@tiledesk/tiledesk-chatbot-plugs/DirectivesChatbotPlug');
+const { SplitsChatbotPlug } = require('@tiledesk/tiledesk-chatbot-plugs/SplitsChatbotPlug');
+const { MarkbotChatbotPlug } = require('@tiledesk/tiledesk-chatbot-plugs/MarkbotChatbotPlug');
+const { WebhookChatbotPlug } = require('@tiledesk/tiledesk-chatbot-plugs/WebhookChatbotPlug');
+
+const { Rasa } = require('./Rasa');
 let db;
 
 //var app = express();
@@ -24,73 +34,8 @@ router.use(cors());
 router.use(bodyParser.json({limit: '50mb'}));
 router.use(bodyParser.urlencoded({ extended: true , limit: '50mb'}));
 
-//let chatbotInfo = null;
 let log = true;
 let API_ENDPOINT = null;
-// const structjson = require('./structJson.js');
-
-// async function getChatbotData(chatbot_id, callback) {
-//   get(chatbot_id, function(err, reply) {
-//     if (err) throw err;
-//     callback(reply.value)
-//   })
-// }
-
-function runRASAQuery(RASAurl, rasa_sender_id, text, callback) {
-  if (log) {
-    console.log("Using RASAurl:", RASAurl)
-    console.log("Using rasa_sender_id:", rasa_sender_id)
-    console.log("Using text:", text)
-  }
-  request(
-    {
-      url: `${RASAurl}`,
-      method: 'POST',
-      headers: {
-        "Content-Type": "application/json"
-      },
-      json: {
-        "message": text,
-        "sender": rasa_sender_id
-      }
-    },
-    function(err, res, resbody) {
-      if (log) {
-        console.log("res.statusCode:", res.statusCode)
-      }
-      if (err) {
-        console.log("An error occurred", err);
-      }
-      else if (res.statusCode >= 400) {
-        console.log("status code error: res.statusCode = ", res.statusCode);
-      }
-      else {
-        if (log) {
-          console.log("RASA reply:", resbody);
-        }
-        callback(resbody);
-      }
-    }
-  );
-}
-
-/*
-function sendMessage(msg_json, project_id, recipient, token, callback) {
-  console.log("Sending message to Tiledesk: " + JSON.stringify(msg_json));
-  request({
-    url: `${API_ENDPOINT}/${project_id}/requests/${recipient}/messages`,
-    headers: {
-      'Content-Type' : 'application/json',
-      'Authorization':'JWT ' + token
-    },
-    json: msg_json,
-    method: 'POST'
-    },
-    function(err, res, resbody) {
-      callback(err)
-    }
-  );
-}*/
 
 router.post("/rasabot", async (req, res) => {
   // delete req.body.payload.request.messages;
@@ -123,7 +68,7 @@ router.post("/rasabot", async (req, res) => {
   // }
   if (log) {
     console.log("CHATBOT-ID: ", chatbot_id)
-    console.log(" ******* TEXT *******" + cbclient.text)
+    console.log("TEXT:" + cbclient.text)
   }
   // RASA Tiledesk payload: HOW TO USE IT?
   let payload = {}
@@ -151,68 +96,52 @@ router.post("/rasabot", async (req, res) => {
   }
   if (log) {console.log("Searching chatbotInfo with key: ", chatbot_id)}
   let chatbotInfo;
+  if (process.env.serverUrl) {
+    chatbotInfo = {
+      serverUrl: process.env.serverUrl
+    }
+  }
   if (!chatbotInfo) {
-    if (log) {console.log("looking for chatbot", chatbot_id)}
-    console.log("looking for chatbot...", chatbot_id)
+    if (log) {console.log("looking for chatbot in db", chatbot_id)}
     chatbotInfo = await db.get(chatbot_id);
-    if (log) {console.log("Chatbot found!", chatbotInfo);}
-    console.log("Chatbot found...!", chatbotInfo);
+    if (log) {console.log("Chatbot found in db!", chatbotInfo);}
   }
   else {
-    if (log) {console.log("Already have chatbotInfo!", chatbotInfo)}
-    console.log("Already have chatbotInfo...!", chatbotInfo)
+    if (log) {console.log("chatbotInfo gor from .env", chatbotInfo)}
   }
   const RASAurl = chatbotInfo.serverUrl;
-  runRASAQuery(RASAurl, rasa_user_id, cbclient.text, async (result) => {
+  let query_text = cbclient.text
+  if (cbclient.action) {
+    query_text = cbclient.action;
+    console.log("Action:", query_text);
+  }
+  const rasa = new Rasa({log: log});
+  rasa.runRASAQuery(RASAurl, rasa_user_id, cbclient.text, async (result) => {
     if (log) {
-      console.log("BOT: RASA REPLY: " + JSON.stringify(result));
+      console.log("RASA replied: " + JSON.stringify(result));
     }
+    let message;
     if(res.statusCode === 200) {
       if (result && result.length > 0 && result[0].text) {
-        const initial_bot_answer = result[0].text;
-        // splits
-        let commands = null;
-        if (result.length > 1) {
-          commands = [];
-          for (i = 0; i < result.length; i++) {
-            commands.push({
-              type: "message",
-              "message": {
-                text: result[i].text
-              }
-            });
-            if (i <= result.length - 2) {
-              commands.push({
-              type: "wait",
-              time: 500
-            });
-            }
-          }
-        }
-        const message = {
-          text: initial_bot_answer
-        }
-        if (commands) {
-          if (!message.attributes) {
-            message.attributes = {}
-          }
-          message.attributes.commands = commands
-        }
-        const bot_answer = await execPipeline(message, cbclient, API_ENDPOINT, {}, () => {
-          if (log) {
-              console.log("Message sent.");
-            }
-        });
+        message = rasa.messageByRASAResponse(result);
       }
-      
       /* you can optionally check the intent confidence
       var reply = "Intent under confidence threshold, can you rephrase?"
       if (result.intent.confidence > 0.8) {
         reply = result.reply
       }
       */
-      
     }
+    else {
+      message = {
+        text: "(RASA) An error occurred."
+      }
+    }
+    await execPipeline(message, cbclient, API_ENDPOINT, {}, () => {
+      if (log) {
+        console.log("Message sent.");
+      }
+    });
   });
 })
 
@@ -224,17 +153,68 @@ async function execPipeline(static_bot_answer, cbclient, API_ENDPOINT, context, 
   }
   static_bot_answer.attributes.directives = true;
   static_bot_answer.attributes.splits = false;
-  static_bot_answer.attributes.markbot = true;
+  static_bot_answer.attributes.markbot = false;
   const messagePipeline = new MessagePipeline(static_bot_answer, context);
   let directivesPlug = new DirectivesChatbotPlug(cbclient.supportRequest, API_ENDPOINT, cbclient.token);
   messagePipeline.addPlug(directivesPlug);
   messagePipeline.addPlug(new SplitsChatbotPlug());
   messagePipeline.addPlug(new MarkbotChatbotPlug());
-  const bot_answer = await messagePipeline.exec();
+  let bot_answer = await messagePipeline.exec();
   if (log) {
     console.log("End pipeline, bot_answer:", JSON.stringify(bot_answer));
   }
-  
+  /*bot_answer = {
+    text: "Ciaoo",
+    attributes: {
+      attachment: {
+        type:"template",
+        buttons: [
+          {
+            type: "action",
+            value: "Hi",
+            action: "Hi",
+            show_echo: true
+          }
+        ]
+      }
+    }
+  };*/
+  /*bot_answer = {
+	"text": "Hey!",
+	"attributes": {
+		"attachment": {
+			"type": "template",
+			"buttons": [{
+				"type": "action",
+				"value": "Who are you?",
+				"action": "Who are you?",
+				"show_echo": true
+			}, {
+				"type": "action",
+				"value": "Bye",
+				"action": "Bye",
+				"show_echo": true
+			}]
+		},
+		"directives": true,
+		"splits": false,
+		"markbot": false,
+		"commands": [{
+			"type": "message",
+			"message": {
+				"text": "Hey!"
+			}
+		}, {
+			"type": "wait",
+			"time": 500
+		}, {
+			"type": "message",
+			"message": {
+				"text": "How are you?"
+			}
+		}]
+	}
+};*/
   cbclient.tiledeskClient.sendSupportMessage(
     cbclient.supportRequest.request_id, bot_answer,
     () => {
@@ -253,6 +233,7 @@ async function execPipeline(static_bot_answer, cbclient, API_ENDPOINT, context, 
   );
 }
 
+/*
 function sendBackToTiledesk(cbclient, payload, result) {
   const is_fallback = result.intent.isFallback;
   const intent_confidence = result.intentDetectionConfidence;
@@ -268,7 +249,7 @@ function sendBackToTiledesk(cbclient, payload, result) {
     intent_name: intent_name,
     is_fallback: is_fallback,
     confidence: intent_confidence,
-    message: payload.message // ASPETTO ANDREA CHE FACCIA QUESTA PATCH
+    message: payload.message // ASPETTO LEO CHE FACCIA QUESTA PATCH
   }
   // if (is_fallback || (!is_fallback && intent_confidence < 0.7)) {
     // console.log("Fallback or inaccurate confidence. Fallback?", is_fallback, "Confidence?", intent_confidence);
@@ -276,6 +257,8 @@ function sendBackToTiledesk(cbclient, payload, result) {
     // fireNotFoundEvent(cbclient, is_fallback, intent_confidence);
   // }
 }
+*/
+
 
 /*
 function fireNotFoundEvent(cbclient, is_fallback, confidence) {
@@ -318,31 +301,25 @@ router.post('/botcredendials/:project/bots/:chatbot', (req, res) => {
     console.log("DATA:", data)
   }
   
-  //var form = new formidable.IncomingForm();
-  // FORM.PARSE in advance: to avoid H18 error
-  // Our 503s (H18 errors) were caused by us not consuming POST data from the socket for some requests.
-  // src: https://github.com/copleykj/socialize-cloudinary/issues/1
-  //form.parse(req, function (err, fields, files) {
-    //console.log("Form parsed.")
-    verifyAuthorization(req, function(verified) {
-      if (!verified) {
-        if (log) {
-          console.log("Post Unauthorized.")
-        }
-        res.status(403).send({success: false, msg: 'Unauthorized'});
-        return
+  verifyAuthorization(req, function(verified) {
+    if (!verified) {
+      if (log) {
+        console.log("Post Unauthorized.")
       }
-      else {
-        if (log) {
-          console.log("Post Authorized.")
-        }
-        updateCredentials(chatbot_id, data, res, () => {
-          //res.writeHead(200, {'content-type': 'application/json'});
-          res.send({"success": true});
-          res.end();
-        });
+      res.status(403).send({success: false, msg: 'Unauthorized'});
+      return
+    }
+    else {
+      if (log) {
+        console.log("Post Authorized.")
       }
-    });
+      updateCredentials(chatbot_id, data, res, () => {
+        //res.writeHead(200, {'content-type': 'application/json'});
+        res.send({"success": true});
+        res.end();
+      });
+    }
+  });
 });
 
 async function updateCredentials(chatbot_id, data, res, callback) {
