@@ -1,6 +1,6 @@
 {
   "name": "tiledesk-rasa-connector-test-app",
-  "version": "1.1.10",
+  "version": "1.1.12",
   "description": "Tiledesk RASA Connector testbed",
   "engines": {
     "node": "12.x"
@@ -22,7 +22,7 @@
   "homepage": "https://github.com/Tiledesk/tiledesk-rasa-connector#readme",
   "dependencies": {
     "@tiledesk/tiledesk-chatbot-client": "^0.5.30",
-    "@tiledesk/tiledesk-rasa-connector": "^1.0.8",
+    "@tiledesk/tiledesk-rasa-connector": "^1.0.9",
     "actions-on-google": "^2.12.0",
     "body-parser": "^1.19.0",
     "dotenv": "^8.2.0",
