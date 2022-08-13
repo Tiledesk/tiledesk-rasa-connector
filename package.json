@@ -1,6 +1,6 @@
 {
   "name": "tiledesk-rasa-connector-test-app",
-  "version": "1.10",
+  "version": "1.1.10",
   "description": "Tiledesk RASA Connector testbed",
   "engines": {
     "node": "12.x"
