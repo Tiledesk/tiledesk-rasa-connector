@@ -23,7 +23,7 @@
   "dependencies": {
     "@tiledesk/tiledesk-chatbot-client": "^0.5.30",
     "@tiledesk/tiledesk-chatbot-util": "^0.8.36",
-    "@tiledesk/tiledesk-chatbot-plugs": "^0.1.3",
+    "@tiledesk/tiledesk-chatbot-plugs": "^0.1.5",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
