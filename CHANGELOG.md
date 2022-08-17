@@ -1,5 +1,7 @@
 # Tiledesk native RASA connector
 
+### 1.0.10 support for Markbot re-added
+
 ### 1.0.9 fixed missing request lib import
 
 ### 1.0.8 - added support for RASA buttons and images. Removed support for Tiledesk splitted messages and markbot.

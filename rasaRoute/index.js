@@ -55,7 +55,7 @@ router.post("/rasabot", async (req, res) => {
   const cbclient = new TiledeskChatbotClient({request: req, response: res, APIURL: _API_URL, APIKEY: '____APIKEY____', log: API_LOG});
   const message = req.body.payload;
   if (log) {
-    console.log("message:", message);
+    //console.log("message:", message);
     console.log("cbclient.APIURL", cbclient.APIURL);
     console.log("cbclient.tiledeskClient.APIURL", cbclient.tiledeskClient.APIURL);
   }
@@ -120,32 +120,78 @@ router.post("/rasabot", async (req, res) => {
     if (log) {
       console.log("RASA replied: " + JSON.stringify(result));
     }
-    let message;
+    let commands;
     if(res.statusCode === 200) {
       if (result && result.length > 0 && result[0].text) {
-        message = rasa.messageByRASAResponse(result);
+        //message = rasa.messageByRASAResponse(result);
+        commands = rasa.commandsByRASAResponse(result);
+        console.log("got commands", commands)
+        sendMessagesIn(commands, cbclient);
       }
-      /* you can optionally check the intent confidence
-      var reply = "Intent under confidence threshold, can you rephrase?"
-      if (result.intent.confidence > 0.8) {
-        reply = result.reply
+      else {
+        console.error("Somethign weird happened. No messages.");
       }
-      */
     }
     else {
       message = {
         text: "(RASA) An error occurred."
       }
+      await execPipeline(message, cbclient, {}, () => {
+        if (log) {
+          console.log("Message sent.");
+        }
+      });
+      return;
     }
-    await execPipeline(message, cbclient, API_ENDPOINT, {}, () => {
+    /*await execPipeline(message, cbclient, API_ENDPOINT, {}, () => {
       if (log) {
         console.log("Message sent.");
       }
-    });
+    });*/
   });
 })
 
-async function execPipeline(static_bot_answer, cbclient, API_ENDPOINT, context, completionCallback) {
+function sendMessagesIn(commands, cbclient) {
+  let i = 0
+  async function execute(command) {
+    console.log("exec command: " + JSON.stringify(command))
+    if (command.type === "message") {
+      //send_message(command, intent_info, function () {
+      let message = command.message;
+      if (!message.attributes) {
+        message.attributes = {};
+      }
+      message.attributes['clienttimestamp'] = Date.now();
+      await execPipeline(message, cbclient, {}, () => {
+        console.log("message sent", message, i)
+        i += 1
+        if (i < commands.length) {
+          execute(commands[i])
+        }
+        else {
+          console.log("last command executed (wait), exit")
+        }
+      });
+      //})
+    }
+    else if (command.type === "wait") {
+      setTimeout(() => {
+        i += 1
+        if (i < commands.length) {
+          execute(commands[i])
+        }
+        else {
+          console.log("last command executed (send message), exit")
+        }
+      },
+      command.time)
+    }
+  }
+  execute(commands[i]);
+}
+
+async function execPipeline(static_bot_answer, cbclient, context, completionCallback) {
+  const API_ENDPOINT = cbclient.APIURL;
   console.log("static_bot_answer:", static_bot_answer);
   // message pipeline
   if (!static_bot_answer.attributes) {
@@ -153,7 +199,7 @@ async function execPipeline(static_bot_answer, cbclient, API_ENDPOINT, context, 
   }
   static_bot_answer.attributes.directives = true;
   static_bot_answer.attributes.splits = false;
-  static_bot_answer.attributes.markbot = false;
+  static_bot_answer.attributes.markbot = true;
   const messagePipeline = new MessagePipeline(static_bot_answer, context);
   let directivesPlug = new DirectivesChatbotPlug(cbclient.supportRequest, API_ENDPOINT, cbclient.token);
   messagePipeline.addPlug(directivesPlug);
@@ -502,7 +548,6 @@ function getToken(headers) {
 }
 
 function startRasa(settings, completionCallback) {
-  //throw "ERRORRRRRRRR";
   console.log("Starting RASA with Settings:......", settings);
   if (!settings.MONGODB_URI) {
     throw new Error("settings.MONGODB_URI is mandatory.");
@@ -514,10 +559,6 @@ function startRasa(settings, completionCallback) {
     API_ENDPOINT = settings.API_ENDPOINT;
     console.log("(RASA) settings.API_ENDPOINT:", API_ENDPOINT);
   }
-  /*if (settings.chatbotInfo) {
-    chatbotInfo = settings.chatbotInfo;
-    console.log("(RASA) Got chatbotInfo:", chatbotInfo);
-  }*/
   if (!settings.log) {
     log = false;
   }
@@ -534,21 +575,6 @@ function startRasa(settings, completionCallback) {
     }
   });
 }
-/*
-console.log("Starting RASA connector...");
-console.log("Connecting to mongodb...");
-console.log("Found process.env.KVBASE_COLLECTION:", process.env.KVBASE_COLLECTION);
-const kvbase_collection = process.env.KVBASE_COLLECTION ? process.env.KVBASE_COLLECTION : 'kvstore';
-console.log("kvbase_collection:", kvbase_collection);
-db = new KVBaseMongo(kvbase_collection);
-db.connect(process.env.MONGODB_URI, () => {
-  console.log("MongoDB successfully connected.");
-  var port = process.env.PORT || 3000;
-  app.listen(port, function () {
-    console.log('RASA connector listening on port ', port);
-  });
-});
-*/
 
 router.get('/', (req, res) => {
   res.write("Hello from RASA connector (router)");

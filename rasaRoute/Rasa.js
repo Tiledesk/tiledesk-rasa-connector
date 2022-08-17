@@ -46,7 +46,8 @@ class Rasa {
       }
     );
   }
-  
+
+  // DEPRECATED
   messageByRASAResponse(result) {
     const initial_bot_answer = result[0].text;
     const message = this.translateToTiledesk(result[0]);
@@ -89,6 +90,30 @@ class Rasa {
     return message;
   }
 
+  commandsByRASAResponse(response) {
+    let commands = [];
+    if (response.length > 0) {
+      for (let i = 0; i < response.length; i++) {
+        console.log("iii:", i);
+        console.log("response.length", response.length)
+        let command_message = this.translateToTiledesk(response[i]);
+        commands.push({
+          type: "message",
+          "message": command_message
+          //"message": {text: result[i].text}
+        });
+        if (i <= response.length - 2) {
+          commands.push({
+            type: "wait",
+            time: 300
+          });
+        }
+      }
+    }
+    console.log("returning", JSON.stringify(commands));
+    return commands;
+  }
+  
   translateToTiledesk(rasa_message) {
     console.log("Translating:", rasa_message);
     /*
@@ -108,10 +133,11 @@ class Rasa {
     }
     */
     if (rasa_message.image) {
-      message.type = "image"
+      message.text = " ";
+      message.type = "image";
       message.metadata = {
         src: rasa_message.image
-      }
+      };
     }
     /*
     {
